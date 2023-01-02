@@ -16,7 +16,9 @@ ser = serial.Serial(
         timeout=20
 )
 
-while True:
+action = "read"
+
+while action == "read":
     
     action = input("What would you like to do? type 'read' to get data and 'stop' to stop")
 
@@ -24,11 +26,13 @@ while True:
             message=bytes("read\n", "UTF-8")
             ser.write(message)
             print(ser.read_until())
+            action = "read"
 
 
 
     elif action == "stop":
             message=bytes("stop\n", "UTF-8")
             ser.write(message)
+            action = "stop"
 
 
