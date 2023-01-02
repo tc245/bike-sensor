@@ -31,7 +31,6 @@ while action == "read":
     elif input == "restart":
             message=bytes("read\n", "UTF-8")
             ser.write(message)
-            print(ser.read_until())
             action = "read"
 
     elif input == "stop":
