@@ -20,17 +20,21 @@ action = "read"
 
 while action == "read":
     
-    action = input("What would you like to do? type 'read' to get data and 'stop' to stop")
+    input = input("What would you like to do? type 'read' to get data and 'stop' to stop and 'restart' to restart the program")
 
-    if action == "read":
+    if input == "read":
             message=bytes("read\n", "UTF-8")
             ser.write(message)
             print(ser.read_until())
             action = "read"
 
+    elif input == "restart":
+            message=bytes("read\n", "UTF-8")
+            ser.write(message)
+            print(ser.read_until())
+            action = "read"
 
-
-    elif action == "stop":
+    elif input == "stop":
             message=bytes("stop\n", "UTF-8")
             ser.write(message)
             action = "stop"
