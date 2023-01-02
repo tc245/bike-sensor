@@ -20,7 +20,7 @@ action = "read"
 
 while action == "read":
     
-    input = input("What would you like to do? type 'read' to get data and 'stop' to stop and 'restart' to restart the program")
+    input = input("What would you like to do?\n type 'read' to get data\n 'stop' to stop\n'restart' to restart the program")
 
     if input == "read":
             message=bytes("read\n", "UTF-8")
