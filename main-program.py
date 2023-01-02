@@ -30,6 +30,5 @@ while True:
     elif action == "stop":
             message=bytes("stop\n", "UTF-8")
             ser.write(message)
-            print(ser.readlines())
 
 
