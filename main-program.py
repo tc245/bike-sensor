@@ -21,7 +21,7 @@ while True:
     action = input("What would you like to do? type 'read' to get data and 'stop' to stop")
 
     if action == "read":
-            message=bytes("start\n", "UTF-8")
+            message=bytes("read\n", "UTF-8")
             ser.write(message)
             print(ser.readlines())
 
