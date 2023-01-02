@@ -23,7 +23,7 @@ while True:
     if action == "read":
             message=bytes("read\n", "UTF-8")
             ser.write(message)
-            print(ser.readlines())
+            print(ser.read_until())
 
 
 
