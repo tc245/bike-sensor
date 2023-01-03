@@ -31,7 +31,7 @@ uart0 = UART(0, baudrate=9600, bits=8, parity=None, stop=1, timeout=300000)
 while True:
     try:
         print("waiting for message...")
-        message = json.dumps(str(uart0.readline(), 'UTF-8').strip("\n"))
+        message = json.loads(str(uart0.readline(), 'UTF-8').strip("\n"))
         action = message["action"]
 
         if action == "read":

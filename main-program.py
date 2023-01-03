@@ -11,7 +11,7 @@ import threading
 # args = parser.parse_args()
 
 ##variables
-INTERVAL = 0.5
+INTERVAL = 0.1
 
 #Define thread functions
 def serial_reader(queue, event, serial_object):
