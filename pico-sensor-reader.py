@@ -5,6 +5,7 @@ import time
 from pms5003 import PMS5003
 from breakout_sgp30 import BreakoutSGP30
 from machine import UART, Pin
+import json
 
 PINS_BREAKOUT_GARDEN = {"sda": 4, "scl": 5}
 
@@ -27,14 +28,13 @@ sgp30.start_measurement(False)
 
 uart0 = UART(0, baudrate=9600, bits=8, parity=None, stop=1, timeout=300000)
 
-
 while True:
     try:
         print("waiting for message...")
-        message = str(uart0.readline(), 'UTF-8').strip("\n")
-        print(message)
+        message = json.dumps(str(uart0.readline(), 'UTF-8').strip("\n"))
+        action = message["action"]
 
-        if message == "start":
+        if action == "read":
             temperature, pressure, humidity, gas, status, _, _ = bmp.read()
             data = pms5003.read()
             heater = "Stable" if status & STATUS_HEATER_STABLE else "Unstable"
@@ -46,9 +46,9 @@ while True:
             pm1 = data.pm_ug_per_m3(1)
             data = ("PM10: {}, PM2.5: {}, PM1: {}, CO2: {}, Temp: {}, Pressure: {}, Humidity: {}, Gas: {}\n".format(pm10, pm25, pm1, eCO2, temperature, (pressure/100), humidity, gas))
             print(data)
-            uart0.write(data)        
+            uart0.write(data)
 
-        elif message == "stop":
+        elif action == "stop":
             print("stopping...")
             pass
         

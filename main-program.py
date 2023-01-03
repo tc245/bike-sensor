@@ -10,12 +10,17 @@ import threading
 # parser.add_argument('--action', action='store', type=str, required=True)
 # args = parser.parse_args()
 
+##variables
+INTERVAL = 0.5
+
 #Define thread functions
 def serial_reader(queue, event, serial_object):
     while not event.is_set():
+        serial_object.write(bytes('{"action": "read"}', 'UTF-8'))
         message = serial_object.read_until()
-        #logging.info("Producer got message: %s", message)
+        logging.info("Producer got message: %s", message)
         queue.put(message)
+        time.sleep(INTERVAL)
 
     logging.info("Producer received event. Exiting")
 
