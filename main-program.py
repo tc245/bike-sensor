@@ -1,12 +1,35 @@
 #!/usr/bin/env python
 import time
 import serial
-import argparse
+import concurrent.futures
+import logging
+import queue
+import threading
 
 # parser = argparse.ArgumentParser()
 # parser.add_argument('--action', action='store', type=str, required=True)
 # args = parser.parse_args()
 
+#Define thread functions
+def serial_reader(queue, event, serial_object):
+    while not event.is_set():
+        message = serial_object.read_until()
+        #logging.info("Producer got message: %s", message)
+        queue.put(message)
+
+    logging.info("Producer received event. Exiting")
+
+def consumer(queue, event):
+    """Pretend we're saving a number in the database."""
+    while not event.is_set() or not queue.empty():
+        message = queue.get()
+        logging.info(
+            "Consumer storing message: %s (size=%d)", message, queue.qsize()
+        )
+
+    logging.info("Consumer received event. Exiting")
+
+##Create serial object
 ser = serial.Serial(
         port='/dev/ttyS0',
         baudrate = 9600,
@@ -16,26 +39,19 @@ ser = serial.Serial(
         timeout=20
 )
 
-action = "read"
+if __name__ == "__main__":
+    format = "%(asctime)s: %(message)s"
+    logging.basicConfig(format=format, level=logging.INFO,
+                        datefmt="%H:%M:%S")
 
-while action == "read":
-    
-    user_input = input("What would you like to do? type...\n'read' to get data\n'stop' to stop\n'restart' to restart the program\n")
+    pipeline = queue.Queue(maxsize=10)
+    event = threading.Event()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        executor.submit(serial_reader, pipeline, event)
+        executor.submit(consumer, pipeline, event)
 
-    if user_input == "read":
-            message=bytes("read\n", "UTF-8")
-            ser.write(message)
-            print(ser.read_until())
-            action = "read"
-
-    elif user_input == "restart":
-            message=bytes("read\n", "UTF-8")
-            ser.write(message)
-            action = "read"
-
-    elif user_input == "stop":
-            message=bytes("stop\n", "UTF-8")
-            ser.write(message)
-            action = "stop"
+        time.sleep(20)
+        logging.info("Main: about to set event")
+        event.set()
 
 
