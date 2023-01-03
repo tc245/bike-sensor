@@ -16,7 +16,7 @@ INTERVAL = 0.5
 #Define thread functions
 def serial_reader(queue, event, serial_object):
     while not event.is_set():
-        serial_object.write(bytes('{"action": "read"}', 'UTF-8'))
+        serial_object.write(bytes('{"action": "read"}\n', 'UTF-8'))
         message = serial_object.read_until()
         logging.info("Producer got message: %s", message)
         queue.put(message)
