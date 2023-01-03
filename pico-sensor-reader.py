@@ -44,7 +44,7 @@ while True:
             pm10 = data.pm_ug_per_m3(10)
             pm25 = data.pm_ug_per_m3(2.5)
             pm1 = data.pm_ug_per_m3(1)
-            data = ("PM10: {}, PM2.5: {}, PM1: {}, CO2: {}, Temp: {}, Pressure: {}, Humidity: {}, Gas: {}\n".format(pm10, pm25, pm1, eCO2, temperature, (pressure/100), humidity, gas))
+            data = (bytes('{"PM10": {}, "PM2.5": {}, "PM1": {}, "CO2": {}, "Temp": {}, "Pressure": {}, "Humidity": {}, "Gas": {}}\n'.format(pm10, pm25, pm1, eCO2, temperature, (pressure/100), humidity, gas)), 'UTF-8')
             print(data)
             uart0.write(data)
 

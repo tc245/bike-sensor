@@ -27,9 +27,11 @@ def serial_reader(queue, event, serial_object):
 def consumer(queue, event):
     """Pretend we're saving a number in the database."""
     while not event.is_set() or not queue.empty():
-        message = queue.get()
+        message = queue.get().decode('UTF-8')
+        pm10_message = f"The level of pm10 is {message['PM10']}"
+        pm25_message = f"The level of pm25 is {message['PM25']}"
         logging.info(
-            "Consumer storing message: %s (size=%d)", message, queue.qsize()
+            "Consumer storing message: %s (size=%d)", pm10_message, pm25_message, queue.qsize()
         )
 
     logging.info("Consumer received event. Exiting")
