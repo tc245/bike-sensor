@@ -47,7 +47,7 @@ if __name__ == "__main__":
     pipeline = queue.Queue(maxsize=10)
     event = threading.Event()
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-        executor.submit(serial_reader, pipeline, event)
+        executor.submit(serial_reader, pipeline, event, ser)
         executor.submit(consumer, pipeline, event)
 
         time.sleep(20)
