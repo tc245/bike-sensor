@@ -29,9 +29,9 @@ def consumer(queue, event):
     """Pretend we're saving a number in the database."""
     while not event.is_set() or not queue.empty():
         message = queue.get()
-        # pm10 = json.loads(message.decode('UTF-8').strip("\n"))["PM10"]
+        pm10 = json.loads(message.decode('UTF-8').strip("\n"))["PM10"]
         # pm25 = json.loads(message.decode('UTF-8').strip("\n"))["PM25"]
-        # pm10_message = f"The level of pm10 is {pm10}"
+        message = f"The level of pm10 is {pm10}"
         # pm25_message = f"The level of pm25 is {pm25}"
         logging.info(
             "Consumer storing message: %s (size=%d)", message, queue.qsize()
