@@ -6,6 +6,7 @@ import logging
 import queue
 import threading
 import json
+from pijuice import PiJuice # Import pijuice module
 
 # parser = argparse.ArgumentParser()
 # parser.add_argument('--action', action='store', type=str, required=True)
@@ -48,6 +49,9 @@ ser = serial.Serial(
         bytesize=serial.EIGHTBITS,
         timeout=20
 )
+
+#Create pijuice object
+pijuice = PiJuice(1, 0x14)
 
 if __name__ == "__main__":
     format = "%(asctime)s: %(message)s"
