@@ -1,5 +1,6 @@
 # 2024-03-19
 # Script to read GPS and PM sensor and write to SQLite db
+# the PMS5003 is running off of version 0.5 of the library, not the latest version.
 
 import sqlite3
 import time
