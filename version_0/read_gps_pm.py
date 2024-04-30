@@ -148,13 +148,22 @@ def read_gps_influx():
                    "fix": gps.data['mode_fix_type']})
   return gps_dict
 
-def read_pms5003():
+def read_pms5003_influx():
   """Reads data from the PMS5003 sensor and returns a list."""
   pmdata = {}
   result = pms5003.read()
   pmdata.update({"pm10": result.pm10_std})
   pmdata.update({"pm25": result.pm25_std})
   pmdata.update({"pm1": result.pm100_std})
+  return pmdata
+
+def read_pms5003():
+  """Reads data from the PMS5003 sensor and returns a list."""
+  pmdata = []
+  result = pms5003.read()
+  pmdata.append(result.pm10_std)
+  pmdata.append(result.pm25_std)
+  pmdata.append(result.pm100_std)
   return pmdata
 
 def main():
@@ -166,9 +175,10 @@ def main():
     gps_data = list(read_gps())
     gps_data_influx = read_gps_influx()
     pms_data = read_pms5003()
+    pms_data_influx = read_pms5003_influx()
     influx_data = {}
     influx_data.update(gps_data_influx)
-    influx_data.update(pms_data)
+    influx_data.update(pms_data_influx)
     data = [str(gps_data[0])] + gps_data[1:10] + pms_data[0:3] + [tday]
     print(data, flush=True)
     write_to_database(conn, data)
