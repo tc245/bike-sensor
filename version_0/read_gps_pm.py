@@ -145,7 +145,8 @@ def read_gps_influx():
                    "hdop": gps.data['hdop'],
                    "vdop": gps.data['vdop'],
                    "timestamp": gps.data['timestamp'],
-                   "fix": gps.data['mode_fix_type']})
+                   "fix": gps.data['mode_fix_type'],
+                   "timestamp": time.ctime()})
   return gps_dict
 
 def read_pms5003_influx():
