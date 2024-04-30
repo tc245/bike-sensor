@@ -140,7 +140,7 @@ def read_gps_influx():
                    "alt": gps.data['altitude'],
                    "speed": gps.data['speed_over_ground'],
                    "sats": gps.data['num_sats'],
-                   "quality": gps.data['gps_qual'],
+                   "qual": gps.data['gps_qual'],
                    "pdop": gps.data['pdop'],
                    "hdop": gps.data['hdop'],
                    "vdop": gps.data['vdop'],
