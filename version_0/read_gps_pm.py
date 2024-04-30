@@ -167,7 +167,8 @@ def main():
     gps_data_influx = read_gps_influx()
     pms_data = read_pms5003()
     influx_data = {}
-    influx_data.update(gps_data_influx, pms_data)
+    influx_data.update(gps_data_influx)
+    influx_data.update(pms_data)
     data = [str(gps_data[0])] + gps_data[1:10] + pms_data[0:3] + [tday]
     print(data, flush=True)
     write_to_database(conn, data)
