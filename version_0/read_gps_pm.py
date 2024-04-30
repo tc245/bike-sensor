@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 # 2024-03-19
 # Script to read GPS and PM sensor and write to SQLite db
 # the PMS5003 is running off of version 0.5 of the library, not the latest version.
@@ -5,19 +6,29 @@
 import sqlite3
 import time
 from pa1010d import PA1010D
-from pms5003 import PMS5003
+import plantower
 from operator import itemgetter
 from datetime import datetime
+import board
+import neopixel
 
-# Define sensors
+#setup neopixels
+num_pixels = 8
+ORDER = neopixel.RGB
+pixel_pin = board.D18
+
+# Define sensors and neopixels
 gps = PA1010D()
-pms5003 = PMS5003(device="/dev/ttyAMA0", baudrate=9600)
+pms5003 = plantower.Plantower(port='/dev/serial0')
+pixels = neopixel.NeoPixel(
+    pixel_pin, num_pixels, brightness=0.2, auto_write=False, pixel_order=ORDER
+)
 
 tday = datetime.today().strftime('%Y-%m-%d')
 print(tday)
 
 # Define database filename (modify as needed)
-database_file = "sensor_data.db"
+database_file = "/home/pi/aq-sensor/sensor_data.db"
 
 def create_database_table(conn):
   """Creates a table in the database if it doesn't exist."""
@@ -35,7 +46,6 @@ def create_database_table(conn):
                   hdop TEXT,
                   pm_1_0 REAL,
                   pm2_5 REAL,
-                  pm5 REAL,
                   pm10 REAL,
                   date TEXT
                   )''')
@@ -44,7 +54,7 @@ def create_database_table(conn):
 def write_to_database(conn, data):
   """Writes data to the sensor_data table in the database."""
   cursor = conn.cursor()
-  cursor.execute("INSERT INTO sensor_data VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", data)
+  cursor.execute("INSERT INTO sensor_data VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)", data)
   conn.commit()
 
 def read_gps():
@@ -56,8 +66,12 @@ def read_gps():
 
 def read_pms5003():
   """Reads data from the PMS5003 sensor and returns a list."""
-  pmdata = pms5003.read()
-  return pmdata.data
+  pmdata = []
+  result = pms5003.read()
+  pmdata.append(result.pm10_std)
+  pmdata.append(result.pm25_std)
+  pmdata.append(result.pm100_std)
+  return pmdata
 
 def main():
   """Continuously reads sensor data and writes to the database."""
@@ -68,10 +82,10 @@ def main():
     gps_data = list(read_gps())
     print(len(gps_data))
     pms_data = list(read_pms5003())
-    data = [str(gps_data[0])] + gps_data[1:10] + pms_data[8:12] + [tday]
-    print(data)
+    data = [str(gps_data[0])] + gps_data[1:10] + pms_data[0:3] + [tday]
+    print(data, flush=True)
     write_to_database(conn, data)
-    time.sleep(1)
+    time.sleep(10)
 
 if __name__ == "__main__":
   main()
