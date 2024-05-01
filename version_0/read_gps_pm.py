@@ -208,7 +208,7 @@ def main():
     print(influx_data, flush=True)
     write_to_database(conn, data)
     if USING_INFLUXDB:
-       if checkInternetHttplib():
+       if checkInternetHttplib(HOST+":"+str(PORT)):
           write_influxdb(influx_data)
     time.sleep(10)
 
