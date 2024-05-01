@@ -215,7 +215,6 @@ def read_battery_influx():
   battery_data.update({"battery_fault_status": pijuice.status.GetFaultStatus()})
   battery_data.update({"battery_current": pijuice.status.GetBatteryCurrent()})
   battery_data.update({"battery_charge": pijuice.status.GetChargeLevel()})
-  battery_data.update({"battery_status": pijuice.status.GetBatteryStatus()})
   return battery_data
 
 def main():
