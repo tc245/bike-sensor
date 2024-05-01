@@ -113,7 +113,6 @@ def write_influxdb(VALUE_DICT):
               "battery_voltage" : VALUE_DICT['battery_voltage'],
               "battery_current": VALUE_DICT['battery_current'],
               "battery_charge": VALUE_DICT['battery_charge'],
-              "battery_capacity": VALUE_DICT['battery_capacity'],
               "battery_status": VALUE_DICT['battery_status']
           }
       }
