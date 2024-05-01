@@ -93,7 +93,6 @@ def write_influxdb(VALUE_DICT):
           }
       }
     ]
-
     client.write_points(particle_data, database=INFLUXDB_DB) #THESE ARE OUTDATED AND NEED TO BE UPDATED!
     client.write_points(gps_data, database=INFLUXDB_DB) #THESE ARE OUTDATED AND NEED TO BE UPDATED!
 
@@ -153,9 +152,9 @@ def read_pms5003_influx():
   """Reads data from the PMS5003 sensor and returns a list."""
   pmdata = {}
   result = pms5003.read()
-  pmdata.update({"pm10": result.pm10_std})
-  pmdata.update({"pm25": result.pm25_std})
-  pmdata.update({"pm1": result.pm100_std})
+  pmdata.update({"pm10": result.pm100_std})
+  pmdata.update({"pm25": result.pm250_std})
+  pmdata.update({"pm1": result.pm10_std})
   return pmdata
 
 def read_pms5003():
