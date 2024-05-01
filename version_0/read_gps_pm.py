@@ -17,6 +17,7 @@ from influxdb import InfluxDBClient
 import os
 import sys
 import csv
+import http.client as httplib
 
 #setup neopixels
 NUM_PIXELS = 8
@@ -46,6 +47,9 @@ print(tday)
 
 # Define database filename (modify as needed)
 database_file = "/home/pi/aq-sensor/sensor_data.db"
+
+##Set up influxdb client
+client = InfluxDBClient(host=HOST, port=PORT, username=USER, password=PASSWORD) #Initial influxdb client
 
 #Placeholder for various influxdb related functions
 #String search function
@@ -96,6 +100,21 @@ def write_influxdb(VALUE_DICT):
 
     client.write_points(particle_data, database=INFLUXDB_DB) #THESE ARE OUTDATED AND NEED TO BE UPDATED!
     client.write_points(gps_data, database=INFLUXDB_DB) #THESE ARE OUTDATED AND NEED TO BE UPDATED!
+
+# function to check internet connectivity
+def checkInternetHttplib(url="www.geeksforgeeks.org",
+                         timeout=3):
+    connection = httplib.HTTPConnection(url,
+                                        timeout=timeout)
+    try:
+        # only header requested for fast operation
+        connection.request("HEAD", "/")
+        connection.close()  # connection closed
+        print("Internet On")
+        return True
+    except Exception as exep:
+        print(exep)
+        return False
 
 def create_database_table(conn):
   """Creates a table in the database if it doesn't exist."""
@@ -171,6 +190,9 @@ def main():
   """Continuously reads sensor data and writes to the database."""
   conn = sqlite3.connect(database_file)
   create_database_table(conn)  # Create table if it doesn't exist
+  #Influxdb setup
+  if not search(client.get_list_database(), INFLUXDB_DB):   #Check if database exists, if not create it
+      client.create_database(INFLUXDB_DB)
 
   while True:
     gps_data = list(read_gps())
@@ -183,16 +205,10 @@ def main():
     data = [str(gps_data[0])] + gps_data[1:10] + pms_data[0:3] + [tday]
     print(data, flush=True)
     write_to_database(conn, data)
-    write_influxdb(influx_data)
+    if checkInternetHttplib("www.google.com"):
+       write_influxdb(influx_data)
     time.sleep(10)
 
-## Other setup
-##Influx DB setup
-client = InfluxDBClient(host=HOST, port=PORT, username=USER, password=PASSWORD) #Initial influxdb client
-dbs = client.get_list_database()
-new_db = search(dbs, INFLUXDB_DB)
-if not new_db:
-    client.create_database(INFLUXDB_DB)
-
+#Main
 if __name__ == "__main__":
   main()
