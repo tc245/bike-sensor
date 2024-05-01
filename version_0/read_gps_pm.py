@@ -180,7 +180,8 @@ def main():
     influx_data.update(gps_data_influx)
     influx_data.update(pms_data_influx)
     data = [str(gps_data[0])] + gps_data[1:10] + pms_data[0:3] + [tday]
-    print(data, flush=True)
+    #print(data, flush=True)
+    print(influx_data, flush=True)
     write_to_database(conn, data)
     write_influxdb(influx_data)
     time.sleep(10)
