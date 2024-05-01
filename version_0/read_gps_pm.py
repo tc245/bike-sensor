@@ -102,7 +102,7 @@ def write_influxdb(VALUE_DICT):
     client.write_points(gps_data, database=INFLUXDB_DB) #THESE ARE OUTDATED AND NEED TO BE UPDATED!
 
 # function to check internet connectivity
-def checkInternetHttplib(url="www.geeksforgeeks.org",
+def checkInternetHttplib(url="www.google.com",
                          timeout=3):
     connection = httplib.HTTPConnection(url,
                                         timeout=timeout)
@@ -208,7 +208,7 @@ def main():
     print(influx_data, flush=True)
     write_to_database(conn, data)
     if USING_INFLUXDB:
-       if checkInternetHttplib("www.google.com"):
+       if checkInternetHttplib():
           write_influxdb(influx_data)
     time.sleep(10)
 
