@@ -1,0 +1,16 @@
+[Unit]
+Description=Sensor reader for personal sensor device
+After=systemd-user-sessions.service
+
+StartLimitIntervalSec=120
+StartLimitBurst=5
+
+[Service]
+Restart=on-failure
+RestartSec=10s
+
+Type=simple
+ExecStart=/home/pi/bik-sensor/version_0/read_gps_pm.py
+
+[Install]
+WantedBy=multi-user.target
