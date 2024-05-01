@@ -24,16 +24,16 @@ NUM_PIXELS = 8
 ORDER = neopixel.RGB
 PIXEL_PIN = board.D18
 
-#placeholder code for influxdb setup
+#THESE CAN BE CHANGED!
 HOST = "192.168.0.127" # IP address of influx server
 PORT = 8086 # Port for influx server (default)
 INFLUXDB_DB = "personal-aq-sensor" # Influx database name
-USER = "admin" # the user/password created for the pi, with write access
+USER = "admin" # the userNAME/password created for accessing influxdb
 PASSWORD = "admin"
 PARTICLE_DEV = "rpi-pms5003" #Device tag for influxdb
 GPS_DEV =  "rpi-pa1010d" #Device tag for influxdb
 PARTICIPANT_ID = "PARTICIPANT_1" #Participant ID for influxdb
-
+USING_INFLUXDB = False #Set to True if using influxdb
 
 # Define sensors and neopixels
 gps = PA1010D()
@@ -49,7 +49,8 @@ print(tday)
 database_file = "/home/pi/aq-sensor/sensor_data.db"
 
 ##Set up influxdb client
-client = InfluxDBClient(host=HOST, port=PORT, username=USER, password=PASSWORD) #Initial influxdb client
+if USING_INFLUXDB:
+   client = InfluxDBClient(host=HOST, port=PORT, username=USER, password=PASSWORD) #Initial influxdb client
 
 #Placeholder for various influxdb related functions
 #String search function
@@ -191,8 +192,9 @@ def main():
   conn = sqlite3.connect(database_file)
   create_database_table(conn)  # Create table if it doesn't exist
   #Influxdb setup
-  if not search(client.get_list_database(), INFLUXDB_DB):   #Check if database exists, if not create it
-      client.create_database(INFLUXDB_DB)
+  if USING_INFLUXDB:
+     if not search(client.get_list_database(), INFLUXDB_DB):
+        client.create_database(INFLUXDB_DB) #Check if database exists, if not create it
 
   while True:
     gps_data = list(read_gps())
@@ -205,8 +207,9 @@ def main():
     data = [str(gps_data[0])] + gps_data[1:10] + pms_data[0:3] + [tday]
     print(data, flush=True)
     write_to_database(conn, data)
-    if checkInternetHttplib("www.google.com"):
-       write_influxdb(influx_data)
+    if USING_INFLUXDB:
+       if checkInternetHttplib("www.google.com"):
+          write_influxdb(influx_data)
     time.sleep(10)
 
 #Main
