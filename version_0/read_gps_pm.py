@@ -44,7 +44,7 @@ pms5003.mode_change(plantower.PMS_PASSIVE_MODE) #Change to passive mode
 pixels = neopixel.NeoPixel(
     PIXEL_PIN, NUM_PIXELS, brightness=0.2, auto_write=False, pixel_order=ORDER
 )
-
+pijuice = PiJuice(1, 0x14) # Instantiate PiJuice interface object
 
 tday = datetime.today().strftime('%Y-%m-%d')
 print(tday)
@@ -102,8 +102,25 @@ def write_influxdb(VALUE_DICT):
           }
       }
     ]
+    battery_data = [
+    {
+      "measurement": BATTERY_DEV,
+          "tags": {
+              "participant_id": PARTICIPANT_ID,
+          },
+          "time": VALUE_DICT['timestamp'],
+          "fields": {
+              "battery_voltage" : VALUE_DICT['battery_voltage'],
+              "battery_current": VALUE_DICT['battery_current'],
+              "battery_charge": VALUE_DICT['battery_charge'],
+              "battery_capacity": VALUE_DICT['battery_capacity'],
+              "battery_status": VALUE_DICT['battery_status']
+          }
+      }
+    ]
     client.write_points(particle_data, database=INFLUXDB_DB) #THESE ARE OUTDATED AND NEED TO BE UPDATED!
     client.write_points(gps_data, database=INFLUXDB_DB) #THESE ARE OUTDATED AND NEED TO BE UPDATED!
+    client.write_points(battery_data, database=INFLUXDB_DB) #THESE ARE OUTDATED AND NEED TO BE UPDATED!
 
 # function to check internet connectivity
 def checkInternetHttplib(url="www.google.com",
@@ -191,6 +208,16 @@ def read_pms5003():
   pmdata.append(result.pm100_std)
   return pmdata
 
+def read_battery_influx():
+  """Reads data from the PiJuice battery sensor and returns a dictionary."""
+  battery_data = {}
+  battery_data.update({"battery_voltage": pijuice.status.GetBatteryVoltage()})
+  battery_data.update({"battery_current": pijuice.status.GetBatteryCurrent()})
+  battery_data.update({"battery_charge": pijuice.status.GetChargeLevel()})
+  battery_data.update({"battery_capacity": pijuice.status.GetBatteryCapacity()})
+  battery_data.update({"battery_status": pijuice.status.GetBatteryStatus()})
+  return battery_data
+
 def main():
   """Continuously reads sensor data and writes to the database."""
   conn = sqlite3.connect(database_file)
@@ -205,9 +232,11 @@ def main():
     gps_data_influx = read_gps_influx()
     pms_data = read_pms5003()
     pms_data_influx = read_pms5003_influx()
+    battery_data_influx = read_battery_influx()
     influx_data = {}
     influx_data.update(gps_data_influx)
     influx_data.update(pms_data_influx)
+    influx_data.update(battery_data_influx)
     data = [str(gps_data[0])] + gps_data[1:10] + pms_data[0:3] + [tday]
     #print(data, flush=True)
     print(influx_data, flush=True)
