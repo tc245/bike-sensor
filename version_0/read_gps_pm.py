@@ -18,6 +18,7 @@ import os
 import sys
 import csv
 import http.client as httplib
+from pijuice import PiJuice # Import pijuice module
 
 #setup neopixels
 NUM_PIXELS = 8
@@ -32,15 +33,18 @@ USER = "admin" # the userNAME/password created for accessing influxdb
 PASSWORD = "admin"
 PARTICLE_DEV = "rpi-pms5003" #Device tag for influxdb
 GPS_DEV =  "rpi-pa1010d" #Device tag for influxdb
+BATTERY_DEV = "pijuice"
 PARTICIPANT_ID = "PARTICIPANT_1" #Participant ID for influxdb
-USING_INFLUXDB = False #Set to True if using influxdb
+USING_INFLUXDB = True #Set to True if using influxdb
 
 # Define sensors and neopixels
 gps = PA1010D()
 pms5003 = plantower.Plantower(port='/dev/serial0')
+pms5003.mode_change(plantower.PMS_PASSIVE_MODE) #Change to passive mode
 pixels = neopixel.NeoPixel(
     PIXEL_PIN, NUM_PIXELS, brightness=0.2, auto_write=False, pixel_order=ORDER
 )
+
 
 tday = datetime.today().strftime('%Y-%m-%d')
 print(tday)
@@ -163,7 +167,7 @@ def read_gps_influx():
                    "pdop": gps.data['pdop'],
                    "hdop": gps.data['hdop'],
                    "vdop": gps.data['vdop'],
-                   "timestamp": gps.data['timestamp'],
+                   #"timestamp": gps.data['timestamp'],
                    "fix": gps.data['mode_fix_type'],
                    "timestamp": time.ctime()})
   return gps_dict
@@ -171,16 +175,17 @@ def read_gps_influx():
 def read_pms5003_influx():
   """Reads data from the PMS5003 sensor and returns a list."""
   pmdata = {}
-  result = pms5003.read()
+  result = pms5003.read_in_passive()
   pmdata.update({"pm10": result.pm100_std})
   pmdata.update({"pm25": result.pm25_std})
   pmdata.update({"pm1": result.pm10_std})
+  pmdata.update({"timestamp": time.ctime()})
   return pmdata
 
 def read_pms5003():
   """Reads data from the PMS5003 sensor and returns a list."""
   pmdata = []
-  result = pms5003.read()
+  result = pms5003.read_in_passive()
   pmdata.append(result.pm10_std)
   pmdata.append(result.pm25_std)
   pmdata.append(result.pm100_std)
@@ -210,6 +215,7 @@ def main():
     if USING_INFLUXDB:
        if checkInternetHttplib(HOST+":"+str(PORT)):
           write_influxdb(influx_data)
+          print("Written to influxdb", flush=True)
     time.sleep(10)
 
 #Main
