@@ -25,7 +25,7 @@ ORDER = neopixel.RGB
 PIXEL_PIN = board.D18
 
 #THESE CAN BE CHANGED!
-HOST = "192.168.0.127" # IP address of influx server
+HOST = "20.77.64.8" # IP address of influx server (This is for a test server in azure for the timebeing)
 PORT = 8086 # Port for influx server (default)
 INFLUXDB_DB = "personal-aq-sensor" # Influx database name
 USER = "admin" # the userNAME/password created for accessing influxdb
