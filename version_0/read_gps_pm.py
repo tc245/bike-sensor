@@ -153,7 +153,7 @@ def read_pms5003_influx():
   pmdata = {}
   result = pms5003.read()
   pmdata.update({"pm10": result.pm100_std})
-  pmdata.update({"pm25": result.pm250_std})
+  pmdata.update({"pm25": result.pm25_std})
   pmdata.update({"pm1": result.pm10_std})
   return pmdata
 
