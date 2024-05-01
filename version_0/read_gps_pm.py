@@ -110,10 +110,7 @@ def write_influxdb(VALUE_DICT):
           },
           "time": VALUE_DICT['timestamp'],
           "fields": {
-              "battery_voltage" : VALUE_DICT['battery_voltage'],
-              "battery_current": VALUE_DICT['battery_current'],
-              "battery_charge": VALUE_DICT['battery_charge'],
-              "battery_fault_status": VALUE_DICT['battery_fault_status']
+              "battery_charge": VALUE_DICT['battery_charge']
           }
       }
     ]
@@ -210,9 +207,6 @@ def read_pms5003():
 def read_battery_influx():
   """Reads data from the PiJuice battery sensor and returns a dictionary."""
   battery_data = {}
-  battery_data.update({"battery_voltage": pijuice.status.GetBatteryVoltage()})
-  battery_data.update({"battery_fault_status": pijuice.status.GetFaultStatus()})
-  battery_data.update({"battery_current": pijuice.status.GetBatteryCurrent()})
   battery_data.update({"battery_charge": pijuice.status.GetChargeLevel()})
   return battery_data
 
