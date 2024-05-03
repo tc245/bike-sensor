@@ -72,7 +72,7 @@ def write_influxdb(VALUE_DICT):
           "tags": {
               "participant_id": PARTICIPANT_ID,
           },
-          "time": VALUE_DICT['timestamp'],
+          #"time": VALUE_DICT['timestamp'],
           "fields": {
               "pm25" : VALUE_DICT['pm25'],
               "pm10": VALUE_DICT['pm10'],
@@ -86,7 +86,7 @@ def write_influxdb(VALUE_DICT):
           "tags": {
               "participant_id": PARTICIPANT_ID,
           },
-          "time": VALUE_DICT['timestamp'],
+          #"time": VALUE_DICT['timestamp'],
           "fields": {
               "lat" : VALUE_DICT['lat'],
               "lon": VALUE_DICT['lon'],
@@ -108,7 +108,7 @@ def write_influxdb(VALUE_DICT):
           "tags": {
               "participant_id": PARTICIPANT_ID,
           },
-          "time": VALUE_DICT['timestamp'],
+          #"time": VALUE_DICT['timestamp'],
           "fields": {
               "battery_voltage" : VALUE_DICT['battery_voltage'],
               "battery_current": VALUE_DICT['battery_current'],
