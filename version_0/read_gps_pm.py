@@ -18,6 +18,7 @@ import os
 import sys
 import csv
 import http.client as httplib
+import socket
 from pijuice import PiJuice # Import pijuice module
 
 #setup neopixels
@@ -26,7 +27,9 @@ ORDER = neopixel.RGB
 PIXEL_PIN = board.D18
 
 #THESE CAN BE CHANGED!
-HOST = "20.77.64.8" # IP address of influx server (This is for a test server in azure for the timebeing)
+#HOST = "192.168.0.127" # IP address of home influx server (This is for a test server in azure for the timebeing)
+HOST_REMOTE = "20.77.64.8" #Ip address of azure server
+HOST_LOCAL = "192.168.0.127" #Ip of local server
 PORT = 8086 # Port for influx server (default)
 INFLUXDB_DB = "personal-aq-sensor" # Influx database name
 USER = "admin" # the userNAME/password created for accessing influxdb
@@ -52,9 +55,17 @@ print(tday)
 # Define database filename (modify as needed)
 database_file = "/home/pi/aq-sensor/sensor_data.db"
 
-##Set up influxdb client
+##Set up influxdb client. Note this is non-blocking.
 if USING_INFLUXDB:
-   client = InfluxDBClient(host=HOST, port=PORT, username=USER, password=PASSWORD) #Initial influxdb client
+  client_local = InfluxDBClient(
+    host=HOST_LOCAL, port=PORT, 
+    username=USER, 
+    password=PASSWORD) #Local
+  client_remote = InfluxDBClient(
+    host=HOST_REMOTE, 
+    port=PORT, 
+    username=USER, 
+    password=PASSWORD) #Remote
 
 #Placeholder for various influxdb related functions
 #String search function
@@ -65,7 +76,7 @@ def search(values, searchFor):
                 return True
     return False
 
-def write_influxdb(VALUE_DICT):
+def write_influxdb(VALUE_DICT, client):
     particle_data = [
     {
       "measurement": PARTICLE_DEV,
@@ -121,19 +132,14 @@ def write_influxdb(VALUE_DICT):
     client.write_points(battery_data, database=INFLUXDB_DB) #THESE ARE OUTDATED AND NEED TO BE UPDATED!
 
 # function to check internet connectivity
-def checkInternetHttplib(url="www.google.com",
-                         timeout=3):
-    connection = httplib.HTTPConnection(url,
-                                        timeout=timeout)
-    try:
-        # only header requested for fast operation
-        connection.request("HEAD", "/")
-        connection.close()  # connection closed
-        print("Internet On")
-        return True
-    except Exception as exep:
-        print(exep)
-        return False
+def test_connection(host="8.8.8.8", port=53, timeout=3):
+  try:
+    socket.setdefaulttimeout(timeout)
+    socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
+    return True
+  except Exception as ex:
+    #print(f"Internet Off. Error: {ex}", flush=True)
+    return False
 
 def create_database_table(conn):
   """Creates a table in the database if it doesn't exist."""
@@ -220,8 +226,17 @@ def main():
   create_database_table(conn)  # Create table if it doesn't exist
   #Influxdb setup
   if USING_INFLUXDB:
-     if not search(client.get_list_database(), INFLUXDB_DB):
-        client.create_database(INFLUXDB_DB) #Check if database exists, if not create it
+    if test_connection(host=HOST_REMOTE, port=PORT, timeout=2):
+      if not search(client_remote.get_list_database(), INFLUXDB_DB):
+        client_remote.create_database(INFLUXDB_DB) #Check if database exists, if not create it
+    else:
+      print("Remote influxdb not available", flush=True)
+
+    if test_connection(host=HOST_LOCAL, port=PORT, timeout=2):
+      if not search(client_local.get_list_database(), INFLUXDB_DB):
+        client_local.create_database(INFLUXDB_DB) #Check if database exists, if not create it
+    else:
+      print("Local influxdb not available", flush=True)
 
   while True:
     gps_data = list(read_gps())
@@ -236,11 +251,22 @@ def main():
     data = [str(gps_data[0])] + gps_data[1:10] + pms_data[0:3] + [tday]
     #print(data, flush=True)
     print(influx_data, flush=True)
-    write_to_database(conn, data)
+    write_to_database(conn, data) #Write to local sql
     if USING_INFLUXDB:
-       if checkInternetHttplib(HOST+":"+str(PORT)):
-          write_influxdb(influx_data)
-          print("Written to influxdb", flush=True)
+      if test_connection(host=HOST_REMOTE, port=PORT, timeout=2): # Check if can connect to remote
+        write_influxdb(influx_data, client_remote)
+        print("Written to remote influxdb", flush=True)
+      elif test_connection(host=HOST_LOCAL, port=PORT, timeout=2):# Or check local
+        write_influxdb(influx_data, client_local)
+        print("Written to local influxdb", flush=True)
+      else:
+        print("Cannot connect to influxdb. Written to local file", flush=True)#else write to local json
+        with open("local-data-storage.json", "a") as outfile: 
+          json.dump(influx_data, outfile)
+    elif not USING_INFLUXDB: #Write to local file when not using influxdb
+      print("Writing to local file", flush=True)
+      with open("local-data-storage.json", "a") as outfile:
+        json.dump(influx_data, outfile)     
     time.sleep(10)
 
 #Main
