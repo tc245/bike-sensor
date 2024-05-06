@@ -20,6 +20,7 @@ import csv
 import http.client as httplib
 import socket
 from pijuice import PiJuice # Import pijuice module
+import json
 
 #setup neopixels
 NUM_PIXELS = 8
@@ -52,7 +53,7 @@ pijuice = PiJuice(1, 0x14) # Instantiate PiJuice interface object
 tday = datetime.today().strftime('%Y-%m-%d')
 print(tday)
 
-# Define database filename (modify as needed)
+# Define database and json filenames (modify as needed)
 database_file = "/home/pi/aq-sensor/sensor_data.db"
 
 ##Set up influxdb client. Note this is non-blocking.
@@ -76,14 +77,14 @@ def search(values, searchFor):
                 return True
     return False
 
-def write_influxdb(VALUE_DICT, client):
+def influxdb_write_constructor(VALUE_DICT, timestamp):
     particle_data = [
     {
       "measurement": PARTICLE_DEV,
           "tags": {
               "participant_id": PARTICIPANT_ID,
           },
-          #"time": VALUE_DICT['timestamp'],
+          "time": timestamp,
           "fields": {
               "pm25" : VALUE_DICT['pm25'],
               "pm10": VALUE_DICT['pm10'],
@@ -97,7 +98,7 @@ def write_influxdb(VALUE_DICT, client):
           "tags": {
               "participant_id": PARTICIPANT_ID,
           },
-          #"time": VALUE_DICT['timestamp'],
+          "time": timestamp,
           "fields": {
               "lat" : VALUE_DICT['lat'],
               "lon": VALUE_DICT['lon'],
@@ -119,7 +120,7 @@ def write_influxdb(VALUE_DICT, client):
           "tags": {
               "participant_id": PARTICIPANT_ID,
           },
-          #"time": VALUE_DICT['timestamp'],
+          "time": timestamp,
           "fields": {
               "battery_voltage" : VALUE_DICT['battery_voltage'],
               "battery_current": VALUE_DICT['battery_current'],
@@ -127,9 +128,27 @@ def write_influxdb(VALUE_DICT, client):
           }
       }
     ]
-    client.write_points(particle_data, database=INFLUXDB_DB) #THESE ARE OUTDATED AND NEED TO BE UPDATED!
-    client.write_points(gps_data, database=INFLUXDB_DB) #THESE ARE OUTDATED AND NEED TO BE UPDATED!
-    client.write_points(battery_data, database=INFLUXDB_DB) #THESE ARE OUTDATED AND NEED TO BE UPDATED!
+
+    influx_json = particle_data + gps_data + battery_data
+    sql_list = [timestamp,
+                VALUE_DICT['lat'], 
+                VALUE_DICT['lon'], 
+                VALUE_DICT['alt'], 
+                VALUE_DICT['speed'], 
+                VALUE_DICT['sats'], 
+                VALUE_DICT['fix'], 
+                VALUE_DICT['qual'], 
+                VALUE_DICT['pdop'], 
+                VALUE_DICT['vdop'], 
+                VALUE_DICT['hdop'], 
+                VALUE_DICT['pm1'], 
+                VALUE_DICT['pm25'],
+                VALUE_DICT['pm10'],
+                VALUE_DICT['battery_voltage'],
+                VALUE_DICT['battery_current'],
+                VALUE_DICT['battery_charge']]
+    
+    return influx_json, sql_list
 
 # function to check internet connectivity
 def test_connection(host="8.8.8.8", port=53, timeout=3):
@@ -149,33 +168,29 @@ def create_database_table(conn):
                   lat REAL,
                   lon REAL,
                   alt REAL,
-                  sats TEXT,
-                  qual TEXT,
+                  speed REAL,
+                  num_sats TEXT,
                   fix TEXT,
+                  quality TEXT,
                   pdop TEXT,
                   vdop TEXT,
                   hdop TEXT,
                   pm_1_0 REAL,
                   pm2_5 REAL,
                   pm10 REAL,
-                  date TEXT
+                  battery_voltage REAL,
+                  battery_current REAL,
+                  battery_charge REAL
                   )''')
   conn.commit()
 
 def write_to_database(conn, data):
   """Writes data to the sensor_data table in the database."""
   cursor = conn.cursor()
-  cursor.execute("INSERT INTO sensor_data VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)", data)
+  cursor.execute("INSERT INTO sensor_data VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", data)
   conn.commit()
 
 def read_gps():
-  """Reads data from the GPS sensor and returns a list."""
-  gps.update()
-  # x = list(gps.data.values())
-  y = [*gps.data.values()]
-  return itemgetter(0,1,2,3,7,8,10,11,12,13)(y)
-
-def read_gps_influx():
   """Reads data from the GPS sensor and returns a list."""
   gps_dict = {}
   gps.update()
@@ -193,7 +208,7 @@ def read_gps_influx():
                    "timestamp": time.ctime()})
   return gps_dict
 
-def read_pms5003_influx():
+def read_pms5003():
   """Reads data from the PMS5003 sensor and returns a list."""
   pmdata = {}
   result = pms5003.read_in_passive()
@@ -203,16 +218,7 @@ def read_pms5003_influx():
   pmdata.update({"timestamp": time.ctime()})
   return pmdata
 
-def read_pms5003():
-  """Reads data from the PMS5003 sensor and returns a list."""
-  pmdata = []
-  result = pms5003.read_in_passive()
-  pmdata.append(result.pm10_std)
-  pmdata.append(result.pm25_std)
-  pmdata.append(result.pm100_std)
-  return pmdata
-
-def read_battery_influx():
+def read_battery():
   """Reads data from the PiJuice battery sensor and returns a dictionary."""
   battery_data = {}
   battery_data.update({"battery_voltage": pijuice.status.GetBatteryVoltage()["data"]})
@@ -239,34 +245,33 @@ def main():
       print("Local influxdb not available", flush=True)
 
   while True:
-    gps_data = list(read_gps())
-    gps_data_influx = read_gps_influx()
+    gps_data = read_gps()
     pms_data = read_pms5003()
-    pms_data_influx = read_pms5003_influx()
-    battery_data_influx = read_battery_influx()
+    battery_data = read_battery()
     influx_data = {}
-    influx_data.update(gps_data_influx)
-    influx_data.update(pms_data_influx)
-    influx_data.update(battery_data_influx)
-    data = [str(gps_data[0])] + gps_data[1:10] + pms_data[0:3] + [tday]
-    #print(data, flush=True)
-    print(influx_data, flush=True)
-    write_to_database(conn, data) #Write to local sql
+    influx_data.update(gps_data)
+    influx_data.update(pms_data)
+    influx_data.update(battery_data)
+    remote_data_to_write, local_data_to_write = influxdb_write_constructor(influx_data, time.time_ns())
+    print(local_data_to_write, flush=True)
+    write_to_database(conn, local_data_to_write) #Write to local sql
+    print("Written to local file", flush=True)
+
     if USING_INFLUXDB:
       if test_connection(host=HOST_REMOTE, port=PORT, timeout=2): # Check if can connect to remote
-        write_influxdb(influx_data, client_remote)
+        client_remote.write_points(remote_data_to_write, database=INFLUXDB_DB)
         print("Written to remote influxdb", flush=True)
+
       elif test_connection(host=HOST_LOCAL, port=PORT, timeout=2):# Or check local
-        write_influxdb(influx_data, client_local)
+        client_local.write_points(remote_data_to_write, database=INFLUXDB_DB)
         print("Written to local influxdb", flush=True)
+
       else:
-        print("Cannot connect to influxdb. Written to local file", flush=True)#else write to local json
-        with open("local-data-storage.json", "a") as outfile: 
-          json.dump(influx_data, outfile)
+        print("Cannot connect to influxdb", flush=True)#else write to local json
+
     elif not USING_INFLUXDB: #Write to local file when not using influxdb
-      print("Writing to local file", flush=True)
-      with open("local-data-storage.json", "a") as outfile:
-        json.dump(influx_data, outfile)     
+      print("Not using influxdb", flush=True)
+ 
     time.sleep(10)
 
 #Main
