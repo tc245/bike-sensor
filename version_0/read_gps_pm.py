@@ -21,6 +21,8 @@ import http.client as httplib
 import socket
 from pijuice import PiJuice # Import pijuice module
 import json
+import psutil
+import nmcli
 
 #setup neopixels
 NUM_PIXELS = 8
@@ -135,8 +137,26 @@ def influxdb_write_constructor(VALUE_DICT, timestamp):
       }
     ]
 
-    influx_json = particle_data + gps_data + battery_data
-    sql_list = [timestamp,
+    system_data = [
+    {
+      "measurement": "system_info",
+          "tags": {
+              "participant_id": PARTICIPANT_ID,
+          },
+          "time": timestamp,
+          "fields": {
+              "cpu_usage" : VALUE_DICT['cpu_usage'],
+              "ram_usage": VALUE_DICT['ram_usage'],
+              "disk_usage": VALUE_DICT['disk_usage'],
+              "wifi_ssid": VALUE_DICT['wifi_ssid'],
+              "wifi_signal": VALUE_DICT['wifi_signal']
+          }
+      }
+    ]
+
+    influx_json = particle_data + gps_data + battery_data + system_data
+    sql_list = [
+                timestamp,
                 VALUE_DICT['lat'], 
                 VALUE_DICT['lon'], 
                 VALUE_DICT['alt'], 
@@ -153,7 +173,13 @@ def influxdb_write_constructor(VALUE_DICT, timestamp):
                 VALUE_DICT['battery_voltage'],
                 VALUE_DICT['battery_current'],
                 VALUE_DICT['battery_charge'],
-                VALUE_DICT['battery_status']]
+                VALUE_DICT['battery_status'],
+                VALUE_DICT['cpu_usage'],
+                VALUE_DICT['ram_usage'],
+                VALUE_DICT['disk_usage'],
+                VALUE_DICT['wifi_ssid'],
+                VALUE_DICT['wifi_signal']
+                ]
     
     return influx_json, sql_list
 
@@ -166,6 +192,18 @@ def test_connection(host="8.8.8.8", port=53, timeout=3):
   except Exception as ex:
     #print(f"Internet Off. Error: {ex}", flush=True)
     return False
+  
+# Get current wifi network
+def get_wifi_details():
+  if test_connection():
+     for i in range(0, len(nmcli.device.wifi())-1):
+       if nmcli.device.wifi()[i].in_use == True:
+        ssid = nmcli.device.wifi()[i].ssid
+        signal = nmcli.device.wifi()[i].signal
+  else:
+    ssid = "No connected to wifi"
+    signal = 0
+  return {"ssid": ssid, "signal": signal}
 
 def create_database_table(conn):
   """Creates a table in the database if it doesn't exist."""
@@ -189,13 +227,18 @@ def create_database_table(conn):
                   battery_current REAL,
                   battery_charge REAL,
                   battery_status TEXT
+                  cpu_usage REAL,
+                  ram_usage REAL,
+                  disk_usage REAL,
+                  wifi_ssid TEXT,
+                  wifi_signal REAL
                   )''')
   conn.commit()
 
 def write_to_database(conn, data):
   """Writes data to the sensor_data table in the database."""
   cursor = conn.cursor()
-  cursor.execute("INSERT INTO sensor_data VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", data)
+  cursor.execute("INSERT INTO sensor_data VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", data)
   conn.commit()
 
 def read_gps():
@@ -243,6 +286,16 @@ def read_battery():
     battery_data.update({"battery_status": "Error"})
   return battery_data
 
+def read_system_info():
+  """Reads system information and returns a dictionary."""
+  system_data = {}
+  system_data.update({"cpu_usage": psutil.cpu_percent()})
+  system_data.update({"ram_usage": psutil.virtual_memory().percent})
+  system_data.update({"disk_usage": psutil.disk_usage('/').percent})
+  system_data.update({"wifi_ssid": get_wifi_details()["ssid"]})
+  system_data.update({"wifi_signal": get_wifi_details()["signal"]})
+  return system_data
+
 def main():
   """Continuously reads sensor data and writes to the database."""
   conn = sqlite3.connect(database_file)
@@ -271,10 +324,12 @@ def main():
         pijuice.status.SetLedState('D2', RED)
     pms_data = read_pms5003()
     battery_data = read_battery()
+    system_data = read_system_info()
     influx_data = {}
     influx_data.update(gps_data)
     influx_data.update(pms_data)
     influx_data.update(battery_data)
+    influx_data.update(system_data)
     remote_data_to_write, local_data_to_write = influxdb_write_constructor(influx_data, time.time_ns())
     print(local_data_to_write, flush=True)
     write_to_database(conn, local_data_to_write) #Write to local sql
