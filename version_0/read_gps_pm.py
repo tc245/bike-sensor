@@ -56,7 +56,7 @@ tday = datetime.today().strftime('%Y-%m-%d')
 print(tday)
 
 # Define database and json filenames (modify as needed)
-database_file = "/home/pi/aq-sensor/sensor_data_v2.db"
+database_file = "/home/pi/aq-sensor/sensor_data_v3.db"
 
 # Define LED colours
 RED = [200, 0, 0]
@@ -226,7 +226,7 @@ def create_database_table(conn):
                   battery_voltage REAL,
                   battery_current REAL,
                   battery_charge REAL,
-                  battery_status TEXT
+                  battery_status TEXT,
                   cpu_usage REAL,
                   ram_usage REAL,
                   disk_usage REAL,
