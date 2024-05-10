@@ -235,7 +235,7 @@ def read_battery():
   if pijuice.status.GetStatus()["data"]["battery"] == "NORMAL":
     battery_data.update({"battery_status": "On battery power"})
   elif pijuice.status.GetStatus()["data"]["battery"] == "CHARGING_FROM_IN":
-    if battery_data["battery_charge"] >= 95:
+    if pijuice.status.GetChargeLevel()["data"] >= 95:
       battery_data.update({"battery_status": "Fully Charged"})
     else:
       battery_data.update({"battery_status": "Charging"})
