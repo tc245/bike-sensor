@@ -258,15 +258,17 @@ def main():
     print("Written to local file", flush=True)
 
     if USING_INFLUXDB:
-      if test_connection(host=HOST_REMOTE, port=PORT, timeout=2): # Check if can connect to remote
+      LOCAL = test_connection(host=HOST_LOCAL, port=PORT, timeout=2)
+      REMOTE = test_connection(host=HOST_REMOTE, port=PORT, timeout=2)
+      if REMOTE: # Check if can connect to remote
         client_remote.write_points(remote_data_to_write, database=INFLUXDB_DB)
         print("Written to remote influxdb", flush=True)
 
-      elif test_connection(host=HOST_LOCAL, port=PORT, timeout=2):# Or check local
+      if LOCAL: # Or check local
         client_local.write_points(remote_data_to_write, database=INFLUXDB_DB)
         print("Written to local influxdb", flush=True)
 
-      else:
+      if not LOCAL and not REMOTE:
         print("Cannot connect to influxdb", flush=True)#else write to local json
 
     elif not USING_INFLUXDB: #Write to local file when not using influxdb
