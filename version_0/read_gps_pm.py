@@ -32,7 +32,7 @@ PIXEL_PIN = board.D18
 HOST_REMOTE = "20.77.64.8" #Ip address of azure server
 HOST_LOCAL = "192.168.0.127" #Ip of local server
 PORT = 8086 # Port for influx server (default)
-INFLUXDB_DB = "personal-aq-sensor" # Influx database name
+INFLUXDB_DB = "personal-aq-sensor-v2" # Influx database name
 USER = "admin" # the userNAME/password created for accessing influxdb
 PASSWORD = "admin"
 PARTICLE_DEV = "rpi-pms5003" #Device tag for influxdb
@@ -54,7 +54,11 @@ tday = datetime.today().strftime('%Y-%m-%d')
 print(tday)
 
 # Define database and json filenames (modify as needed)
-database_file = "/home/pi/aq-sensor/sensor_data.db"
+database_file = "/home/pi/aq-sensor/sensor_data_v2.db"
+
+# Define LED colours
+RED = [200, 0, 0]
+GREEN = [0, 200, 0]
 
 ##Set up influxdb client. Note this is non-blocking.
 if USING_INFLUXDB:
@@ -124,7 +128,8 @@ def influxdb_write_constructor(VALUE_DICT, timestamp):
           "fields": {
               "battery_voltage" : VALUE_DICT['battery_voltage'],
               "battery_current": VALUE_DICT['battery_current'],
-              "battery_charge": VALUE_DICT['battery_charge']
+              "battery_charge": VALUE_DICT['battery_charge'],
+              "battery_status": VALUE_DICT['battery_status']
           }
       }
     ]
@@ -146,7 +151,8 @@ def influxdb_write_constructor(VALUE_DICT, timestamp):
                 VALUE_DICT['pm10'],
                 VALUE_DICT['battery_voltage'],
                 VALUE_DICT['battery_current'],
-                VALUE_DICT['battery_charge']]
+                VALUE_DICT['battery_charge'],
+                VALUE_DICT['battery_status']]
     
     return influx_json, sql_list
 
@@ -180,25 +186,26 @@ def create_database_table(conn):
                   pm10 REAL,
                   battery_voltage REAL,
                   battery_current REAL,
-                  battery_charge REAL
+                  battery_charge REAL,
+                  battery_status TEXT
                   )''')
   conn.commit()
 
 def write_to_database(conn, data):
   """Writes data to the sensor_data table in the database."""
   cursor = conn.cursor()
-  cursor.execute("INSERT INTO sensor_data VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", data)
+  cursor.execute("INSERT INTO sensor_data VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", data)
   conn.commit()
 
 def read_gps():
   """Reads data from the GPS sensor and returns a list."""
   gps_dict = {}
   gps.update()
-  gps_dict.update({"lat": gps.data['latitude'], 
-                   "lon": gps.data['longitude'], 
+  gps_dict.update({"lat": float(gps.data['latitude']), 
+                   "lon": float(gps.data['longitude']), 
                    "alt": gps.data['altitude'],
                    "speed": gps.data['speed_over_ground'],
-                   "sats": gps.data['num_sats'],
+                   "sats": int(gps.data['num_sats']),
                    "qual": gps.data['gps_qual'],
                    "pdop": gps.data['pdop'],
                    "hdop": gps.data['hdop'],
@@ -224,6 +231,12 @@ def read_battery():
   battery_data.update({"battery_voltage": pijuice.status.GetBatteryVoltage()["data"]})
   battery_data.update({"battery_current": pijuice.status.GetBatteryCurrent()["data"]})
   battery_data.update({"battery_charge": pijuice.status.GetChargeLevel()["data"]})
+  if pijuice.status.GetStatus()["data"]["battery"] == "NORMAL":
+    battery_data.update({"battery_status": "On battery power"})
+  elif pijuice.status.GetStatus()["data"]["battery"] == "CHARGING_FROM_IN":
+    battery_data.update({"battery_status": "Charging"})
+  else:
+    battery_data.update({"battery_status": "Error"})
   return battery_data
 
 def main():
@@ -246,6 +259,12 @@ def main():
 
   while True:
     gps_data = read_gps()
+    if  gps_data["sats"] == 0:
+        pijuice.status.SetLedState('D2', RED)
+    elif  gps_data["sats"] > 0:
+        pijuice.status.SetLedState('D2', GREEN)
+    else:
+        pijuice.status.SetLedState('D2', RED)
     pms_data = read_pms5003()
     battery_data = read_battery()
     influx_data = {}
