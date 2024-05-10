@@ -59,6 +59,7 @@ database_file = "/home/pi/aq-sensor/sensor_data_v2.db"
 # Define LED colours
 RED = [200, 0, 0]
 GREEN = [0, 200, 0]
+BLUE = [0, 0, 200]
 
 ##Set up influxdb client. Note this is non-blocking.
 if USING_INFLUXDB:
@@ -234,7 +235,10 @@ def read_battery():
   if pijuice.status.GetStatus()["data"]["battery"] == "NORMAL":
     battery_data.update({"battery_status": "On battery power"})
   elif pijuice.status.GetStatus()["data"]["battery"] == "CHARGING_FROM_IN":
-    battery_data.update({"battery_status": "Charging"})
+    if battery_data["battery_charge"] >= 95:
+      battery_data.update({"battery_status": "Fully Charged"})
+    else:
+      battery_data.update({"battery_status": "Charging"})
   else:
     battery_data.update({"battery_status": "Error"})
   return battery_data
