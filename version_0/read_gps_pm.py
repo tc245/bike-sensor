@@ -339,12 +339,18 @@ def main():
       LOCAL = test_connection(host=HOST_LOCAL, port=PORT, timeout=2)
       REMOTE = test_connection(host=HOST_REMOTE, port=PORT, timeout=2)
       if REMOTE: # Check if can connect to remote
-        client_remote.write_points(remote_data_to_write, database=INFLUXDB_DB)
-        print("Written to remote influxdb", flush=True)
+        try:
+          client_remote.write_points(remote_data_to_write, database=INFLUXDB_DB)
+          print("Written to remote influxdb", flush=True)
+        except Exception as e:
+          print(f"Error writing to remote influxdb: {e}", flush=True)
 
       if LOCAL: # Or check local
-        client_local.write_points(remote_data_to_write, database=INFLUXDB_DB)
-        print("Written to local influxdb", flush=True)
+        try:
+          client_local.write_points(remote_data_to_write, database=INFLUXDB_DB)
+          print("Written to local influxdb", flush=True)
+        except Exception as e:
+          print(f"Error writing to local influxdb: {e}", flush=True)
 
       if not LOCAL and not REMOTE:
         print("Cannot connect to influxdb", flush=True)#else write to local json
