@@ -3,24 +3,21 @@
 # Script to read GPS and PM sensor and write to SQLite db
 # the PMS5003 is running off of version 0.5 of the library, not the latest version.
 
+USING_INFLUXDB = True #Set to True if using influxdb
+USING_PIJUICE = True #Set to True if using pijuice
+
 import sqlite3
 import time
 from pa1010d import PA1010D
 import plantower
-from operator import itemgetter
 from datetime import datetime
 import board
 import neopixel
 #placeholder for influxdb stuff
-import requests
 from influxdb import InfluxDBClient
-import os
-import sys
-import csv
-import http.client as httplib
 import socket
-from pijuice import PiJuice # Import pijuice module
-import json
+if USING_PIJUICE:
+  from pijuice import PiJuice # Import pijuice module
 import psutil
 import nmcli
 
@@ -39,9 +36,11 @@ USER = "admin" # the userNAME/password created for accessing influxdb
 PASSWORD = "admin"
 PARTICLE_DEV = "rpi-pms5003" #Device tag for influxdb
 GPS_DEV =  "rpi-pa1010d" #Device tag for influxdb
-BATTERY_DEV = "pijuice"
+if USING_PIJUICE:
+  BATTERY_DEV = "pijuice"
+else:
+  BATTERY_DEV = "no_pijuice"
 PARTICIPANT_ID = "PARTICIPANT_1" #Participant ID for influxdb
-USING_INFLUXDB = True #Set to True if using influxdb
 
 # Define sensors and neopixels
 gps = PA1010D()
@@ -50,7 +49,8 @@ pms5003.mode_change(plantower.PMS_PASSIVE_MODE) #Change to passive mode
 pixels = neopixel.NeoPixel(
     PIXEL_PIN, NUM_PIXELS, brightness=0.2, auto_write=False, pixel_order=ORDER
 )
-pijuice = PiJuice(1, 0x14) # Instantiate PiJuice interface object
+if USING_PIJUICE:
+  pijuice = PiJuice(1, 0x14) # Instantiate PiJuice interface object
 
 tday = datetime.today().strftime('%Y-%m-%d')
 print(tday)
@@ -270,21 +270,24 @@ def read_pms5003():
   return pmdata
 
 def read_battery():
-  """Reads data from the PiJuice battery sensor and returns a dictionary."""
+  """Reads data from the PiJuice battery sensor (if using pijuice, empty data otherwise) and returns a dictionary."""
   battery_data = {}
-  battery_data.update({"battery_voltage": pijuice.status.GetBatteryVoltage()["data"]})
-  battery_data.update({"battery_current": pijuice.status.GetBatteryCurrent()["data"]})
-  battery_data.update({"battery_charge": pijuice.status.GetChargeLevel()["data"]})
-  if pijuice.status.GetStatus()["data"]["battery"] == "NORMAL":
-    battery_data.update({"battery_status": "On battery power"})
-  elif pijuice.status.GetStatus()["data"]["battery"] == "CHARGING_FROM_IN":
-    if pijuice.status.GetChargeLevel()["data"] >= 95:
-      battery_data.update({"battery_status": "Fully Charged"})
+  if USING_PIJUICE:
+    battery_data.update({"battery_voltage": pijuice.status.GetBatteryVoltage()["data"]})
+    battery_data.update({"battery_current": pijuice.status.GetBatteryCurrent()["data"]})
+    battery_data.update({"battery_charge": pijuice.status.GetChargeLevel()["data"]})
+    if pijuice.status.GetStatus()["data"]["battery"] == "NORMAL":
+      battery_data.update({"battery_status": "On battery power"})
+    elif pijuice.status.GetStatus()["data"]["battery"] == "CHARGING_FROM_IN":
+      if pijuice.status.GetChargeLevel()["data"] >= 95:
+        battery_data.update({"battery_status": "Fully Charged"})
+      else:
+        battery_data.update({"battery_status": "Charging"})
     else:
-      battery_data.update({"battery_status": "Charging"})
+      battery_data.update({"battery_status": "Error"})
+    return battery_data
   else:
-    battery_data.update({"battery_status": "Error"})
-  return battery_data
+    return {"battery_voltage": 0, "battery_current": 0, "battery_charge": 0, "battery_status": "No pijuice"}
 
 def read_system_info():
   """Reads system information and returns a dictionary."""
@@ -317,11 +320,14 @@ def main():
   while True:
     gps_data = read_gps()
     if  gps_data["sats"] == 0:
-        pijuice.status.SetLedState('D2', RED)
+        if USING_PIJUICE:
+          pijuice.status.SetLedState('D2', RED)
     elif  gps_data["sats"] > 0:
-        pijuice.status.SetLedState('D2', GREEN)
+        if USING_PIJUICE:
+          pijuice.status.SetLedState('D2', GREEN)
     else:
-        pijuice.status.SetLedState('D2', RED)
+        if USING_PIJUICE:
+          pijuice.status.SetLedState('D2', RED)
     pms_data = read_pms5003()
     battery_data = read_battery()
     system_data = read_system_info()
