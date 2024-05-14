@@ -3,28 +3,30 @@
 # Script to read GPS and PM sensor and write to SQLite db
 # the PMS5003 is running off of version 0.5 of the library, not the latest version.
 
-USING_INFLUXDB = True #Set to True if using influxdb
-USING_PIJUICE = True #Set to True if using pijuice
+USING_INFLUXDB = True #Set to True if using influxdb, False otherwise 
+USING_PIJUICE = False #Set to True if using pijuice, False otherwise
+USING_NEOPIXELS = False #Set to True if using neopixels, False otherwise
 
 import sqlite3
 import time
 from pa1010d import PA1010D
-import plantower
+import plantower #https://pypi.org/project/plantower/
 from datetime import datetime
-import board
-import neopixel
-#placeholder for influxdb stuff
-from influxdb import InfluxDBClient
+if USING_NEOPIXELS:
+  import neopixel
+  import board
+from influxdb import InfluxDBClient #https://influxdb-python.readthedocs.io/en/latest/include-readme.html#installation-1
 import socket
-if USING_PIJUICE:
-  from pijuice import PiJuice # Import pijuice module
+if USING_PIJUICE: #sudo apt-get install pijuice-base  
+  from pijuice import PiJuice #More info here: https://github.com/PiSupply/PiJuice/blob/master/Software/README.md
 import psutil
-import nmcli
+import nmcli #https://pypi.org/project/nmcli/
 
 #setup neopixels
-NUM_PIXELS = 8
-ORDER = neopixel.RGB
-PIXEL_PIN = board.D18
+if USING_NEOPIXELS:
+  NUM_PIXELS = 8
+  ORDER = neopixel.RGB
+  PIXEL_PIN = board.D18
 
 #THESE CAN BE CHANGED!
 #HOST = "192.168.0.127" # IP address of home influx server (This is for a test server in azure for the timebeing)
@@ -46,9 +48,10 @@ PARTICIPANT_ID = "PARTICIPANT_1" #Participant ID for influxdb
 gps = PA1010D()
 pms5003 = plantower.Plantower(port='/dev/serial0')
 pms5003.mode_change(plantower.PMS_PASSIVE_MODE) #Change to passive mode
-pixels = neopixel.NeoPixel(
-    PIXEL_PIN, NUM_PIXELS, brightness=0.2, auto_write=False, pixel_order=ORDER
-)
+if USING_NEOPIXELS:
+  pixels = neopixel.NeoPixel(
+      PIXEL_PIN, NUM_PIXELS, brightness=0.2, auto_write=False, pixel_order=ORDER
+  )
 if USING_PIJUICE:
   pijuice = PiJuice(1, 0x14) # Instantiate PiJuice interface object
 
