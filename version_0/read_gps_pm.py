@@ -67,7 +67,7 @@ tday = datetime.today().strftime('%Y-%m-%d')
 print(tday)
 
 # Define database and json filenames (modify as needed)
-database_file = "/home/pi/aq-sensor/sensor_data_v3.db"
+database_file = "/home/pi/aq-sensor/sensor_data_v4.db"
 
 # Define LED colours
 RED = [200, 0, 0]
