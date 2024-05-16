@@ -162,7 +162,8 @@ def influxdb_write_constructor(VALUE_DICT, timestamp):
               "ram_usage": VALUE_DICT['ram_usage'],
               "disk_usage": VALUE_DICT['disk_usage'],
               "wifi_ssid": VALUE_DICT['wifi_ssid'],
-              "wifi_signal": VALUE_DICT['wifi_signal']
+              "wifi_signal": VALUE_DICT['wifi_signal'],
+              "ip_address": VALUE_DICT['ip_address']
           }
       }
     ]
