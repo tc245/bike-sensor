@@ -3,9 +3,16 @@
 # Script to read GPS and PM sensor and write to SQLite db
 # the PMS5003 is running off of version 0.5 of the library, not the latest version.
 
-USING_INFLUXDB = True #Set to True if using influxdb, False otherwise. Will need to install client. 
-USING_PIJUICE = False #Set to True if using pijuice, False otherwise
-USING_NEOPIXELS = False #Set to True if using neopixels, False otherwise
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument('--pijuice', action='store', type=bool, required=True, help="Do you have a pijuoce attached? (True/False)")
+parser.add_argument('--neopixels', action='store', type=bool, required=True, help="Do you have neopixels attached? (True/False)")
+parser.add_argument('--influxdb', action='store', type=bool, required=True, help="Are you using influxdb? (True/False)")
+args = parser.parse_args()
+
+USING_INFLUXDB = args.influxdb
+USING_PIJUICE = args.pijuice
+USING_NEOPIXELS = args.neopixels
 
 import sqlite3
 import time

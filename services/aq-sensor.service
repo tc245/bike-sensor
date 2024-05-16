@@ -10,7 +10,7 @@ Restart=on-failure
 RestartSec=10s
 
 Type=simple
-ExecStart=/home/pi/bike-sensor/version_0/read_gps_pm.py
+ExecStart=/home/pi/bike-sensor/version_0/read_gps_pm.py --pijuice True --influxdb True --neopixels True
 
 [Install]
 WantedBy=multi-user.target
