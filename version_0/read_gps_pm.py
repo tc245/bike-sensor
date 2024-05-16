@@ -191,7 +191,8 @@ def influxdb_write_constructor(VALUE_DICT, timestamp):
                 VALUE_DICT['ram_usage'],
                 VALUE_DICT['disk_usage'],
                 VALUE_DICT['wifi_ssid'],
-                VALUE_DICT['wifi_signal']
+                VALUE_DICT['wifi_signal'],
+                VALUE_DICT['ip_address']
                 ]
     
     return influx_json, sql_list
@@ -209,14 +210,21 @@ def test_connection(host="8.8.8.8", port=53, timeout=3):
 # Get current wifi network
 def get_wifi_details():
   if test_connection():
-     for i in range(0, len(nmcli.device.wifi())-1):
-       if nmcli.device.wifi()[i].in_use == True:
-        ssid = nmcli.device.wifi()[i].ssid
-        signal = nmcli.device.wifi()[i].signal
+    try:
+      for i in range(0, len(nmcli.device.wifi())-1):
+        if nmcli.device.wifi()[i].in_use == True:
+          ssid = nmcli.device.wifi()[i].ssid
+          signal = nmcli.device.wifi()[i].signal
+          ip_address = nmcli.device.show("wlan0")["IP4.ADDRESS[1]"]
+    except Exception as e:
+      print(f"Error getting wifi details: {e}", flush=True)
+      ssid = "Not connected to wifi"
+      ip_address = "Not connected to wifi"
+      signal = 0
   else:
-    ssid = "No connected to wifi"
+    ssid = "Not connected to wifi"
     signal = 0
-  return {"ssid": ssid, "signal": signal}
+  return {"ssid": ssid, "signal": signal, "ip_address": ip_address}
 
 def create_database_table(conn):
   """Creates a table in the database if it doesn't exist."""
@@ -244,14 +252,15 @@ def create_database_table(conn):
                   ram_usage REAL,
                   disk_usage REAL,
                   wifi_ssid TEXT,
-                  wifi_signal REAL
+                  wifi_signal REAL,
+                  ip_address TEXT
                   )''')
   conn.commit()
 
 def write_to_database(conn, data):
   """Writes data to the sensor_data table in the database."""
   cursor = conn.cursor()
-  cursor.execute("INSERT INTO sensor_data VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", data)
+  cursor.execute("INSERT INTO sensor_data VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", data)
   conn.commit()
 
 def read_gps():
@@ -310,6 +319,7 @@ def read_system_info():
   system_data.update({"disk_usage": psutil.disk_usage('/').percent})
   system_data.update({"wifi_ssid": get_wifi_details()["ssid"]})
   system_data.update({"wifi_signal": get_wifi_details()["signal"]})
+  system_data.update({"ip_address": get_wifi_details()["ip_address"]})
   return system_data
 
 def main():
