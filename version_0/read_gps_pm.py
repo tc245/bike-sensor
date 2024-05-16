@@ -3,7 +3,7 @@
 # Script to read GPS and PM sensor and write to SQLite db
 # the PMS5003 is running off of version 0.5 of the library, not the latest version.
 
-USING_INFLUXDB = True #Set to True if using influxdb, False otherwise 
+USING_INFLUXDB = True #Set to True if using influxdb, False otherwise. Will need to install client. 
 USING_PIJUICE = False #Set to True if using pijuice, False otherwise
 USING_NEOPIXELS = False #Set to True if using neopixels, False otherwise
 
@@ -43,6 +43,7 @@ if USING_PIJUICE:
 else:
   BATTERY_DEV = "no_pijuice"
 PARTICIPANT_ID = "PARTICIPANT_1" #Participant ID for influxdb
+WRITE_TIMEOUT = 10 #Timeout for writing to influxdb
 
 # Define sensors and neopixels
 gps = PA1010D()
@@ -71,12 +72,14 @@ if USING_INFLUXDB:
   client_local = InfluxDBClient(
     host=HOST_LOCAL, port=PORT, 
     username=USER, 
-    password=PASSWORD) #Local
+    password=PASSWORD,
+    timeout=WRITE_TIMEOUT) #Local
   client_remote = InfluxDBClient(
     host=HOST_REMOTE, 
     port=PORT, 
     username=USER, 
-    password=PASSWORD) #Remote
+    password=PASSWORD,
+    timeout=WRITE_TIMEOUT) #Remote
 
 #Placeholder for various influxdb related functions
 #String search function
