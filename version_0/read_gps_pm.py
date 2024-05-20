@@ -14,6 +14,8 @@ USING_INFLUXDB = args.influxdb
 USING_PIJUICE = args.pijuice
 USING_NEOPIXELS = args.neopixels
 
+print(USING_INFLUXDB, USING_PIJUICE, USING_NEOPIXELS, flush=True)
+
 import sqlite3
 import time
 from pa1010d import PA1010D
