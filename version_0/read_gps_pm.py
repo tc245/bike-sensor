@@ -5,12 +5,12 @@
 
 import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument('--no-pijuice', dest='pijuice', action='store_false', required=True)
-parser.add_argument('--pijuice', dest='pijuice', action='store_true', required=True)
-parser.add_argument('--no-neopixels', action='store_false', required=True)
-parser.add_argument('--neopixels', action='store_true', required=True)
-parser.add_argument('--no-influxdb', action='store_false', required=True)
-parser.add_argument('--influxdb', action='store_true', required=True)
+parser.add_argument('--no-pijuice', dest='pijuice', action='store_false')
+parser.add_argument('--pijuice', dest='pijuice', action='store_true')
+parser.add_argument('--no-neopixels', action='store_false')
+parser.add_argument('--neopixels', action='store_true')
+parser.add_argument('--no-influxdb', action='store_false')
+parser.add_argument('--influxdb', action='store_true')
 args = parser.parse_args()
 
 USING_INFLUXDB = args.influxdb
