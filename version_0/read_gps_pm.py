@@ -7,15 +7,17 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--no-pijuice', dest='pijuice', action='store_false')
 parser.add_argument('--pijuice', dest='pijuice', action='store_true')
-parser.add_argument('--no-neopixels', action='store_false')
-parser.add_argument('--neopixels', action='store_true')
-parser.add_argument('--no-influxdb', action='store_false')
-parser.add_argument('--influxdb', action='store_true')
+parser.add_argument('--no-neopixels', dest='neopixels', action='store_false')
+parser.add_argument('--neopixels', dest='neopixels', action='store_true')
+parser.add_argument('--no-influxdb', dest='influxdb', action='store_false')
+parser.add_argument('--influxdb', dest='influxdb', action='store_true')
 args = parser.parse_args()
 
 USING_INFLUXDB = args.influxdb
 USING_PIJUICE = args.pijuice
 USING_NEOPIXELS = args.neopixels
+
+print(USING_INFLUXDB, USING_PIJUICE, USING_NEOPIXELS, flush=True)
 
 import sqlite3
 import time
