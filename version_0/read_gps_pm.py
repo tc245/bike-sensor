@@ -13,12 +13,6 @@ parser.add_argument('--no-influxdb', action='store_false')
 parser.add_argument('--influxdb', action='store_true')
 args = parser.parse_args()
 
-USING_INFLUXDB = args.influxdb
-USING_PIJUICE = args.pijuice
-USING_NEOPIXELS = args.neopixels
-
-print(USING_INFLUXDB, USING_PIJUICE, USING_NEOPIXELS, flush=True)
-
 import sqlite3
 import time
 from pa1010d import PA1010D
