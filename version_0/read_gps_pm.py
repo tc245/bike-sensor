@@ -56,7 +56,7 @@ else:
   BATTERY_DEV = "no_pijuice"
 PARTICIPANT_ID = "PARTICIPANT_1" #Participant ID for influxdb
 WRITE_TIMEOUT = 10 #Timeout for writing to influxdb
-BRIGHTNESS = 0.2 #Brightness of neopixels
+BRIGHTNESS = 0.1 #Brightness of neopixels
 PIXEL_AQ = 0 #Index of neopixel to indicate PM2.5
 PIXEL_GPS = 1 #Index of neopixel to indicate GPS
 PIXEL_WIFI = 2 #Index of neopixel to indicate battery
@@ -351,11 +351,16 @@ def read_battery():
         pixels[6] = GREEN
         pixels[5] = GREEN
         pixels[4] = GREEN
-      else:
+      elif pijuice.status.GetStatus()["data"]["battery"] == "CHARGING_FROM_IN":
         pixels[7] = OFF
         pixels[6] = OFF
         pixels[5] = OFF
         pixels[4] = OFF
+      else:
+        pixels[7] = GREEN
+        pixels[6] = GREEN
+        pixels[5] = GREEN
+        pixels[4] = GREEN
     if pijuice.status.GetStatus()["data"]["battery"] == "NORMAL":
       battery_data.update({"battery_status": "On battery power"})
     elif pijuice.status.GetStatus()["data"]["battery"] == "CHARGING_FROM_IN":
