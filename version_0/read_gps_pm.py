@@ -57,6 +57,9 @@ else:
 PARTICIPANT_ID = "PARTICIPANT_1" #Participant ID for influxdb
 WRITE_TIMEOUT = 10 #Timeout for writing to influxdb
 BRIGHTNESS = 0.2 #Brightness of neopixels
+PIXEL_AQ = 0 #Index of neopixel to indicate PM2.5
+PIXEL_GPS = 1 #Index of neopixel to indicate GPS
+PIXEL_WIFI = 2 #Index of neopixel to indicate battery
 
 # Define sensors and neopixels
 gps = PA1010D()
@@ -233,14 +236,14 @@ def get_wifi_details():
       ip_address = "Not connected to wifi"
       signal = 0
       if USING_NEOPIXELS:
-        pixels[1] = RED
+        pixels[PIXEL_WIFI] = RED
   else:
     ssid = "Not connected to wifi"
     ip_address = "Not connected to wifi"
     signal = 0
     print(f"Error getting wifi details", flush=True)
     if USING_NEOPIXELS:
-      pixels[1] = RED
+      pixels[PIXEL_WIFI] = RED
   try:
     return {"ssid": ssid, "signal": signal, "ip_address": ip_address}
   except Exception as e:
@@ -312,11 +315,11 @@ def read_pms5003():
   pmdata.update({"timestamp": time.ctime()})
   if USING_NEOPIXELS:
     if result.pm25_std < 10:
-      pixels[2] = GREEN
+      pixels[PIXEL_AQ] = GREEN
     elif 10 <= result.pm25_std < 20:
-      pixels[2] = BLUE
+      pixels[PIXEL_AQ] = BLUE
     else:
-      pixels[2] = RED
+      pixels[PIXEL_AQ] = RED
   return pmdata
 
 def read_battery():
@@ -401,17 +404,17 @@ def main():
         if USING_PIJUICE:
           pijuice.status.SetLedState('D2', RED)
         if USING_NEOPIXELS:
-          pixels[0] = RED
+          pixels[PIXEL_GPS] = RED
     elif  gps_data["sats"] > 0:
         if USING_PIJUICE:
           pijuice.status.SetLedState('D2', GREEN)
         if USING_NEOPIXELS:
-          pixels[0] = GREEN
+          pixels[PIXEL_GPS] = GREEN
     else:
         if USING_PIJUICE:
           pijuice.status.SetLedState('D2', RED)
         if USING_NEOPIXELS:
-          pixels[0] = RED
+          pixels[PIXEL_GPS] = RED
     pms_data = read_pms5003()
     battery_data = read_battery()
     system_data = read_system_info()
