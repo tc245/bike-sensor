@@ -82,8 +82,8 @@ database_file = "/home/pi/aq-sensor/sensor_data_v4.db"
 RED = [200, 0, 0]
 GREEN = [0, 200, 0]
 BLUE = [0, 0, 200]
-OFF = [0, 0, 0]
 YELLOW = [200, 200, 0]
+OFF = [0, 0, 0]
 
 ##Set up influxdb client. Note this is non-blocking.
 if USING_INFLUXDB:
@@ -331,14 +331,19 @@ def read_battery():
     battery_data.update({"battery_charge": pijuice.status.GetChargeLevel()["data"]})
     charge = pijuice.status.GetChargeLevel()["data"]
     if USING_NEOPIXELS:
-      if charge < 25:
+      if charge <= 5:
         pixels[7] = RED
         pixels[6] = OFF
         pixels[5] = OFF
         pixels[4] = OFF
-      elif 25 <= charge < 50:
+      elif 5 < charge < 25:
         pixels[7] = YELLOW
-        pixels[6] = YELLOW
+        pixels[6] = OFF
+        pixels[5] = OFF
+        pixels[4] = OFF
+      elif 25 <= charge < 50:
+        pixels[7] = BLUE
+        pixels[6] = BLUE
         pixels[5] = OFF
         pixels[4] = OFF
       elif 50 <= charge < 75:
