@@ -343,13 +343,16 @@ def read_battery():
         pixels[6] = YELLOW
         pixels[5] = YELLOW
         pixels[4] = OFF
-      elif 75 <= charge:
+      elif 75 <= charge < 96:
         pixels[7] = GREEN
         pixels[6] = GREEN
         pixels[5] = GREEN
         pixels[4] = GREEN
       else:
-        pixels[3] = GREEN
+        pixels[7] = OFF
+        pixels[6] = OFF
+        pixels[5] = OFF
+        pixels[4] = OFF
     if pijuice.status.GetStatus()["data"]["battery"] == "NORMAL":
       battery_data.update({"battery_status": "On battery power"})
     elif pijuice.status.GetStatus()["data"]["battery"] == "CHARGING_FROM_IN":
