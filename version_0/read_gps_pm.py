@@ -238,7 +238,7 @@ def get_wifi_details():
     ssid = "Not connected to wifi"
     ip_address = "Not connected to wifi"
     signal = 0
-    print(f"Error getting wifi details: {e}", flush=True)
+    print(f"Error getting wifi details", flush=True)
     if USING_NEOPIXELS:
       pixels[1] = RED
   try:
