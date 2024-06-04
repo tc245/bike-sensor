@@ -223,7 +223,7 @@ def test_connection(host="8.8.8.8", port=53, timeout=3):
 def get_wifi_details():
   if test_connection():
     if USING_NEOPIXELS:
-      pixels[1] = GREEN
+      pixels[PIXEL_WIFI] = GREEN
     try:
       for i in range(0, len(nmcli.device.wifi())-1):
         if nmcli.device.wifi()[i].in_use == True:
