@@ -37,7 +37,7 @@ import nmcli #https://pypi.org/project/nmcli/
 #setup neopixels
 if USING_NEOPIXELS:
   NUM_PIXELS = 8
-  ORDER = neopixel.RGB
+  ORDER = neopixel.GRB
   PIXEL_PIN = board.D18
 
 #THESE CAN BE CHANGED!
@@ -63,7 +63,7 @@ pms5003 = plantower.Plantower(port='/dev/serial0')
 pms5003.mode_change(plantower.PMS_PASSIVE_MODE) #Change to passive mode
 if USING_NEOPIXELS:
   pixels = neopixel.NeoPixel(
-      PIXEL_PIN, NUM_PIXELS, brightness=0.2, auto_write=False, pixel_order=ORDER
+      PIXEL_PIN, NUM_PIXELS, brightness=0.01, auto_write=False, pixel_order=ORDER
   )
 if USING_PIJUICE:
   pijuice = PiJuice(1, 0x14) # Instantiate PiJuice interface object
@@ -443,7 +443,9 @@ def main():
 
     elif not USING_INFLUXDB: #Write to local file when not using influxdb
       print("Not using influxdb", flush=True)
- 
+    
+    pixels.show()
+    
     time.sleep(10)
 
 #Main
