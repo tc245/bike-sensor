@@ -78,6 +78,8 @@ database_file = "/home/pi/aq-sensor/sensor_data_v4.db"
 RED = [200, 0, 0]
 GREEN = [0, 200, 0]
 BLUE = [0, 0, 200]
+OFF = [0, 0, 0]
+YELLOW = [200, 200, 0]
 
 ##Set up influxdb client. Note this is non-blocking.
 if USING_INFLUXDB:
@@ -216,6 +218,8 @@ def test_connection(host="8.8.8.8", port=53, timeout=3):
 # Get current wifi network
 def get_wifi_details():
   if test_connection():
+    if USING_NEOPIXELS:
+      pixels[1] = GREEN
     try:
       for i in range(0, len(nmcli.device.wifi())-1):
         if nmcli.device.wifi()[i].in_use == True:
@@ -227,10 +231,20 @@ def get_wifi_details():
       ssid = "Not connected to wifi"
       ip_address = "Not connected to wifi"
       signal = 0
+      if USING_NEOPIXELS:
+        pixels[1] = RED
   else:
     ssid = "Not connected to wifi"
+    ip_address = "Not connected to wifi"
     signal = 0
-  return {"ssid": ssid, "signal": signal, "ip_address": ip_address}
+    print(f"Error getting wifi details: {e}", flush=True)
+    if USING_NEOPIXELS:
+      pixels[1] = RED
+  try:
+    return {"ssid": ssid, "signal": signal, "ip_address": ip_address}
+  except Exception as e:
+    print(f"Error getting wifi details: {e}", flush=True)
+    return {"ssid": "Not connected to wifi", "signal": 0, "ip_address": "Not connected to wifi"}
 
 def create_database_table(conn):
   """Creates a table in the database if it doesn't exist."""
@@ -295,6 +309,13 @@ def read_pms5003():
   pmdata.update({"pm25": result.pm25_std})
   pmdata.update({"pm1": result.pm10_std})
   pmdata.update({"timestamp": time.ctime()})
+  if USING_NEOPIXELS:
+    if result.pm25_std < 10:
+      pixels[2] = GREEN
+    elif 10 <= result.pm25_std < 20:
+      pixels[2] = BLUE
+    else:
+      pixels[2] = RED
   return pmdata
 
 def read_battery():
@@ -304,6 +325,30 @@ def read_battery():
     battery_data.update({"battery_voltage": pijuice.status.GetBatteryVoltage()["data"]})
     battery_data.update({"battery_current": pijuice.status.GetBatteryCurrent()["data"]})
     battery_data.update({"battery_charge": pijuice.status.GetChargeLevel()["data"]})
+    charge = pijuice.status.GetChargeLevel()["data"]
+    if USING_NEOPIXELS:
+      if charge < 25:
+        pixels[7] = RED
+        pixels[6] = OFF
+        pixels[5] = OFF
+        pixels[4] = OFF
+      elif 25 <= charge < 50:
+        pixels[7] = BLUE
+        pixels[6] = BLUE
+        pixels[5] = OFF
+        pixels[4] = OFF
+      elif 50 <= charge < 75:
+        pixels[7] = YELLOW
+        pixels[6] = YELLOW
+        pixels[5] = YELLOW
+        pixels[4] = OFF
+      elif 75 <= charge:
+        pixels[7] = GREEN
+        pixels[6] = GREEN
+        pixels[5] = GREEN
+        pixels[4] = GREEN
+      else:
+        pixels[3] = GREEN
     if pijuice.status.GetStatus()["data"]["battery"] == "NORMAL":
       battery_data.update({"battery_status": "On battery power"})
     elif pijuice.status.GetStatus()["data"]["battery"] == "CHARGING_FROM_IN":
@@ -351,12 +396,18 @@ def main():
     if  gps_data["sats"] == 0:
         if USING_PIJUICE:
           pijuice.status.SetLedState('D2', RED)
+        if USING_NEOPIXELS:
+          pixels[0] = RED
     elif  gps_data["sats"] > 0:
         if USING_PIJUICE:
           pijuice.status.SetLedState('D2', GREEN)
+        if USING_NEOPIXELS:
+          pixels[0] = GREEN
     else:
         if USING_PIJUICE:
           pijuice.status.SetLedState('D2', RED)
+        if USING_NEOPIXELS:
+          pixels[0] = RED
     pms_data = read_pms5003()
     battery_data = read_battery()
     system_data = read_system_info()
