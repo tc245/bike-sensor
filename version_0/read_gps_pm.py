@@ -346,7 +346,7 @@ def read_battery():
         pixels[6] = BLUE
         pixels[5] = BLUE
         pixels[4] = OFF
-      elif 75 <= charge < 96:
+      elif 75 <= charge < 95:
         pixels[7] = GREEN
         pixels[6] = GREEN
         pixels[5] = GREEN
