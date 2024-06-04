@@ -56,6 +56,7 @@ else:
   BATTERY_DEV = "no_pijuice"
 PARTICIPANT_ID = "PARTICIPANT_1" #Participant ID for influxdb
 WRITE_TIMEOUT = 10 #Timeout for writing to influxdb
+BRIGHTNESS = 0.2 #Brightness of neopixels
 
 # Define sensors and neopixels
 gps = PA1010D()
@@ -63,7 +64,7 @@ pms5003 = plantower.Plantower(port='/dev/serial0')
 pms5003.mode_change(plantower.PMS_PASSIVE_MODE) #Change to passive mode
 if USING_NEOPIXELS:
   pixels = neopixel.NeoPixel(
-      PIXEL_PIN, NUM_PIXELS, brightness=0.01, auto_write=False, pixel_order=ORDER
+      PIXEL_PIN, NUM_PIXELS, brightness=BRIGHTNESS, auto_write=False, pixel_order=ORDER
   )
 if USING_PIJUICE:
   pijuice = PiJuice(1, 0x14) # Instantiate PiJuice interface object
