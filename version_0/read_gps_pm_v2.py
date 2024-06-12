@@ -33,6 +33,7 @@ if USING_PIJUICE: #sudo apt-get install pijuice-base
   from pijuice import PiJuice #More info here: https://github.com/PiSupply/PiJuice/blob/master/Software/README.md
 import psutil
 import nmcli #https://pypi.org/project/nmcli/
+import threading
 
 #setup neopixels
 if USING_NEOPIXELS:
@@ -57,9 +58,10 @@ else:
 PARTICIPANT_ID = "PARTICIPANT_1" #Participant ID for influxdb
 WRITE_TIMEOUT = 10 #Timeout for writing to influxdb
 BRIGHTNESS = 0.1 #Brightness of neopixels
-PIXEL_BATTERY = 0 #Index of neopixel to indicate PM2.5
+PIXEL_AQ = 0 #Index of neopixel to indicate PM2.5
 PIXEL_GPS = 1 #Index of neopixel to indicate GPS
 PIXEL_WIFI = 2 #Index of neopixel to indicate battery
+MODE = 1 #Mode of the button
 
 # Define sensors and neopixels
 gps = PA1010D()
@@ -222,7 +224,7 @@ def test_connection(host="8.8.8.8", port=53, timeout=3):
 # Get current wifi network
 def get_wifi_details():
   if test_connection():
-    if USING_NEOPIXELS:
+    if USING_NEOPIXELS and MODE == 2:
       pixels[PIXEL_WIFI] = GREEN
     try:
       for i in range(0, len(nmcli.device.wifi())-1):
@@ -235,14 +237,14 @@ def get_wifi_details():
       ssid = "Not connected to wifi"
       ip_address = "Not connected to wifi"
       signal = 0
-      if USING_NEOPIXELS:
+      if USING_NEOPIXELS and MODE == 2:
         pixels[PIXEL_WIFI] = RED
   else:
     ssid = "Not connected to wifi"
     ip_address = "Not connected to wifi"
     signal = 0
     print(f"Error getting wifi details", flush=True)
-    if USING_NEOPIXELS:
+    if USING_NEOPIXELS and MODE == 2:
       pixels[PIXEL_WIFI] = RED
   try:
     return {"ssid": ssid, "signal": signal, "ip_address": ip_address}
@@ -313,29 +315,13 @@ def read_pms5003():
   pmdata.update({"pm25": result.pm25_std})
   pmdata.update({"pm1": result.pm10_std})
   pmdata.update({"timestamp": time.ctime()})
-  if USING_NEOPIXELS:
-    if result.pm25_std < 7.5:
-      pixels[7] = GREEN
-      pixels[6] = OFF
-      pixels[5] = OFF
-      pixels[4] = OFF
-    elif 7.5 <= result.pm25_std < 15:
-      pixels[7] = BLUE
-      pixels[6] = BLUE
-      pixels[5] = OFF
-      pixels[4] = OFF
-    elif 15 <= result.pm25_std < 30:
-      pixels[7] = YELLOW
-      pixels[6] = YELLOW
-      pixels[5] = YELLOW
-      pixels[4] = OFF
-    elif result.pm25_std >= 30:
-      pixels[7] = RED
-      pixels[6] = RED
-      pixels[5] = RED
-      pixels[4] = read_system_info
-  else:
-      pixels[PIXEL_BATTERY] = RED
+  if USING_NEOPIXELS and MODE == 2:
+    if result.pm25_std < 10:
+      pixels[PIXEL_AQ] = GREEN
+    elif 10 <= result.pm25_std < 20:
+      pixels[PIXEL_AQ] = BLUE
+    else:
+      pixels[PIXEL_AQ] = RED
   return pmdata
 
 def read_battery():
@@ -346,21 +332,42 @@ def read_battery():
     battery_data.update({"battery_current": pijuice.status.GetBatteryCurrent()["data"]})
     battery_data.update({"battery_charge": pijuice.status.GetChargeLevel()["data"]})
     charge = pijuice.status.GetChargeLevel()["data"]
-    if USING_NEOPIXELS:
+    if USING_NEOPIXELS and MODE == 2:
       if charge <= 5:
-        pixels[PIXEL_BATTERY] = RED
+        pixels[7] = RED
+        pixels[6] = OFF
+        pixels[5] = OFF
+        pixels[4] = OFF
       elif 5 < charge < 25:
-        pixels[PIXEL_BATTERY] = YELLOW
+        pixels[7] = YELLOW
+        pixels[6] = OFF
+        pixels[5] = OFF
+        pixels[4] = OFF
       elif 25 <= charge < 50:
-        pixels[PIXEL_BATTERY] = BLUE
+        pixels[7] = BLUE
+        pixels[6] = BLUE
+        pixels[5] = OFF
+        pixels[4] = OFF
       elif 50 <= charge < 75:
-        pixels[PIXEL_BATTERY] = BLUE
+        pixels[7] = BLUE
+        pixels[6] = BLUE
+        pixels[5] = BLUE
+        pixels[4] = OFF
       elif 75 <= charge < 95:
-        pixels[PIXEL_BATTERY] = GREEN
+        pixels[7] = GREEN
+        pixels[6] = GREEN
+        pixels[5] = GREEN
+        pixels[4] = GREEN
       elif pijuice.status.GetStatus()["data"]["battery"] == "CHARGING_FROM_IN":
-        pixels[PIXEL_BATTERY] = OFF
+        pixels[7] = OFF
+        pixels[6] = OFF
+        pixels[5] = OFF
+        pixels[4] = OFF
       else:
-        pixels[PIXEL_BATTERY] = GREEN
+        pixels[7] = GREEN
+        pixels[6] = GREEN
+        pixels[5] = GREEN
+        pixels[4] = GREEN
     if pijuice.status.GetStatus()["data"]["battery"] == "NORMAL":
       battery_data.update({"battery_status": "On battery power"})
     elif pijuice.status.GetStatus()["data"]["battery"] == "CHARGING_FROM_IN":
@@ -408,17 +415,17 @@ def main():
     if  gps_data["sats"] == 0:
         if USING_PIJUICE:
           pijuice.status.SetLedState('D2', RED)
-        if USING_NEOPIXELS:
+        if USING_NEOPIXELS and MODE == 2:
           pixels[PIXEL_GPS] = RED
     elif  gps_data["sats"] > 0:
         if USING_PIJUICE:
           pijuice.status.SetLedState('D2', GREEN)
-        if USING_NEOPIXELS:
+        if USING_NEOPIXELS and MODE == 2:
           pixels[PIXEL_GPS] = GREEN
     else:
         if USING_PIJUICE:
           pijuice.status.SetLedState('D2', RED)
-        if USING_NEOPIXELS:
+        if USING_NEOPIXELS and MODE == 2:
           pixels[PIXEL_GPS] = RED
     pms_data = read_pms5003()
     battery_data = read_battery()
@@ -459,6 +466,21 @@ def main():
     pixels.show()
     
     time.sleep(10)
+
+def button_callback():
+    global MODE
+    if MODE  == 1:
+        MODE += 1
+    else:
+        MODE = 1
+        pixels.fill((0, 0, 0))
+
+    
+
+##Start threads
+t1 = threading.Thread(target=main)
+t2 = threading.Thread(target=main)
+
 
 #Main
 if __name__ == "__main__":
